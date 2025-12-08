@@ -17,7 +17,7 @@
  * 
  * 
  * 【利用規約】
- * 独自ライセンス https://github.com/kmycode/RpgMakerMZPlugins/edit/main/LICENSE.md
+ * 独自ライセンス https://github.com/kmycode/RpgMakerMZPlugins/blob/main/LICENSE.md
  * 
  * 【更新履歴】
  * 1.0 初版公開
