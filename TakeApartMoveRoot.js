@@ -15,7 +15,7 @@
  * @desc 並列処理などで主人公が移動している場合、その移動を強制的に停止します。
  * 
  * 【利用規約】
- * WTFPL
+ * 独自ライセンス https://github.com/kmycode/RpgMakerMZPlugins/edit/main/LICENSE.md
  */
 
 (() => {

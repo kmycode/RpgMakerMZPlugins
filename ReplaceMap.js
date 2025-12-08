@@ -42,10 +42,20 @@
  * 
  * 
  * 【利用規約】
- * WTFPL
+ * 独自ライセンス https://github.com/kmycode/RpgMakerMZPlugins/edit/main/LICENSE.md
  * 
  * 【更新履歴】
  * 1.0 初版公開
+ * 
+ * 
+ * @command requestReloadMapWhenNextTransfer
+ * @text 次回移動時にマップリロードを要求
+ * @desc 次回移動時にマップリロードを強制的に行います。同じマップへ移動する時に有効です。移動コマンドの直前に呼び出します
+ * 
+ * 
+ * @command moveSamePositionWithReload
+ * @text リロードとともに全く同じ場所へ移動
+ * @desc マップリロードを強制的に行ったうえで、全く同じ場所に移動します
  */
 
 $dataReplacedMap = null;
@@ -184,5 +194,14 @@ $dataReplacedMap = null;
     const height = $dataMap.height;
     return $dataReplacedMap.data[(z * height + y) * width + x] || 0;
   };
+
+  PluginManager.registerCommand(PLUGIN_NAME, "requestReloadMapWhenNextTransfer", args => {
+    $gamePlayer.requestMapReload();
+  });
+
+  PluginManager.registerCommand(PLUGIN_NAME, "moveSamePositionWithReload", args => {
+    $gamePlayer.requestMapReload();
+    $gamePlayer.reserveTransfer($gameMap.mapId(), $gamePlayer.x, $gamePlayer.y, $gamePlayer.direction(), 2);
+  });
 
 })();

@@ -27,7 +27,7 @@
  * @desc 画面上に表示するメッセージの設定されたアイテムを指定します
  * 
  * 【利用規約】
- * WTFPL
+ * 独自ライセンス https://github.com/kmycode/RpgMakerMZPlugins/edit/main/LICENSE.md
  */
 
 (() => {

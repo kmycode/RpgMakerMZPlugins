@@ -17,7 +17,7 @@
  * <area:a3> --- 数字の前にaをつけると、元々の位置を中心にした 3x2+1=7 マス四方の四角形の範囲内で動きます（リージョンは見ません）
  * 
  * 【利用規約】
- * WTFPL
+ * 独自ライセンス https://github.com/kmycode/RpgMakerMZPlugins/edit/main/LICENSE.md
  */
 
 (() => {

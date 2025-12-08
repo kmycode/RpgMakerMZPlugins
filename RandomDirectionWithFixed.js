@@ -16,7 +16,7 @@
  *   Game_Character.prototype.moveRandom
  * 
  * 【利用規約】
- * WTFPL
+ * 独自ライセンス https://github.com/kmycode/RpgMakerMZPlugins/edit/main/LICENSE.md
  */
 
 (() => {
