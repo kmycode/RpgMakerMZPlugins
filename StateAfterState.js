@@ -13,8 +13,10 @@
  * 
  * 【使い方】
  * ステートのメモに以下を記載
- *   <afterState:10> --- このステートが解除された直後に常にID:10のステートを付与
+ *   <afterState:10>     --- このステートが解除された直後に常にID:10のステートを付与
  *   <afterState:10,0.7> --- このステートが解除された直後に70%の確率でID:10のステートを付与
+ *   <extendState:10>    --- このステートを削除するときは同時にID:10のステートも削除する
+ *   <extendState:10,11> --- 対象IDは複数指定可能
  * 
  * 
  * 【利用規約】
@@ -33,14 +35,24 @@
     Game_Battler_removeState.call(this, stateId);
 
     const state = $dataStates[stateId];
-    if (!state?.meta?.afterState) return;
+    if (!state?.meta) return;
 
-    const parameters = state.meta.afterState.split(',');
-    const rate = parameters.length >= 2 ? parseFloat(parameters[1]) : 1;
-    const newStateId = parseInt(parameters[0]);
+    if (state.meta.afterState) {
+      const parameters = state.meta.afterState.split(',');
+      const rate = parameters.length >= 2 ? parseFloat(parameters[1]) : 1;
+      const newStateId = parseInt(parameters[0]);
 
-    if (rate >= 1 || Math.random() <= rate) {
-      this.addState(newStateId);
+      if (rate >= 1 || Math.random() <= rate) {
+        this.addState(newStateId);
+      }
+    }
+
+    if (state.meta.extendState) {
+      const extendStateIds = state.meta.extendState.split(',').map((id) => parseInt(id));
+      const targetStateIds = this._states.filter((stateId) => extendStateIds.includes(stateId));
+      for (const stateId of targetStateIds) {
+        this.removeState(stateId);
+      }
     }
   };
 })();

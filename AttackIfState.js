@@ -27,8 +27,10 @@
  * 
  * 【使い方】
  * スキルのメモに以下を記載
- *   <ifState:10> --- ID:10のステートがある敵に攻撃する
+ *   <ifState:10>    --- ID:10のステートがある敵に攻撃する
  *   <ifNotState:10> --- ID:10のステートがない敵に攻撃する
+ *   <ifArmor:10>    --- ID:10の防具がある敵に攻撃する
+ *   <ifNotArmor:10> --- ID:10の防具がない敵に攻撃する
  * 対象がいない場合はそのまま別の攻撃をします
  * 
  * 
@@ -68,18 +70,26 @@
   // ---------------------------------------------
 
   const filterSkillTargets = function(unit, skill) {
-    const targetMembers = unit.aliveMembers();
+    let targetMembers = unit.aliveMembers();
 
     if (skill.meta) {
-      const { ifState, ifNotState } = skill.meta;
+      const { ifState, ifNotState, ifArmor, ifNotArmor } = skill.meta;
 
       if (ifState) {
         const skillId = parseInt(ifState);
-        return targetMembers.filter((member) => member.states().some((state) => state.id === skillId));
+        targetMembers = targetMembers.filter((member) => member.states().some((state) => state.id === skillId));
       }
       if (ifNotState) {
         const skillId = parseInt(ifNotState);
-        return targetMembers.filter((member) => !member.states().some((state) => state.id === skillId));
+        targetMembers = targetMembers.filter((member) => !member.states().some((state) => state.id === skillId));
+      }
+      if (ifArmor) {
+        const armorId = parseInt(ifArmor);
+        targetMembers = targetMembers.filter((member) => member.hasArmor($dataArmors[armorId]));
+      }
+      if (ifNotArmor) {
+        const armorId = parseInt(ifNotArmor);
+        targetMembers = targetMembers.filter((member) => !member.hasArmor($dataArmors[armorId]));
       }
     }
 

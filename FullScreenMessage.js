@@ -65,8 +65,8 @@
       oldHeight = this.height;
     }
 
-    this.y = 52;
-    this.height = Graphics.boxHeight - 52;
+    this.y = 0;
+    this.height = Graphics.boxHeight - this.y;
   };
 
   const Window_Message_newPage = Window_Message.prototype.newPage;
@@ -93,12 +93,13 @@
     $gameMessage.add(message);
   };
 
-  PluginManager.registerCommand(PLUGIN_NAME, "showMessage", args => {
+  PluginManager.registerCommand(PLUGIN_NAME, "showMessage", function(args) {
     const message = args.message;
     showMessage(message);
+    this.setWaitMode("message");
   });
 
-  PluginManager.registerCommand(PLUGIN_NAME, "showItemNote", args => {
+  PluginManager.registerCommand(PLUGIN_NAME, "showItemNote", function(args) {
     const itemIdStr = args.itemId;
     if (!itemIdStr) return;
 
@@ -112,5 +113,7 @@
     } else {
       showMessage(item.note);
     }
+
+    this.setWaitMode("message");
   });
 })();

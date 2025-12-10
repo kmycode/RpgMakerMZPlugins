@@ -15,8 +15,12 @@
  * 単にタイルセットをいじるだけでは、マップ上のキャラもそこに移動できてしまいます
  * そうならないようにします
  * 
+ * 【必須】
+ * MapEventPageMetaプラグインの機能を利用します。これがない場合、マップイベントの各ページ設定は無視されます
+ * 
  * 【使い方】
  * マップ上のイベントのメモに以下を設定します。
+ * （マップイベントの各ページ最初の注釈にも設定可能。その場合、当該ページ有効時のみに適用）
  *   <tileset:3> --- 3はタイルセットのID
  * 
  * 
@@ -36,7 +40,7 @@
   const Game_CharacterBase_isMapPassable = Game_CharacterBase.prototype.isMapPassable;
   Game_CharacterBase.prototype.isMapPassable = function(x, y, d) {
     if (this instanceof Game_Event) {
-      const eventTilesetId = this.event().meta?.tileset;
+      const eventTilesetId = this.pageMeta?.tileset ?? this.event().meta?.tileset;
       if (eventTilesetId) {
         overrideTilesetId = parseInt(eventTilesetId);
       }
