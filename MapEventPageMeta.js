@@ -37,22 +37,29 @@
   }
 
   Game_Event.prototype.updatePageMeta = function() {
-    const comments = this.getCurrentPageFirstComments();
+    this.pageMeta = this.extractPageMeta(this.page());
+  }
+
+  Game_Event.prototype.extractPageMeta = function(page) {
+    const comments = this.getPageFirstComments(page);
     if (!comments) {
-      this.pageMeta = {};
-      return;
+      return {};
     }
 
     const tmpObj = { note: comments, meta: {} };
     DataManager.extractMetadata(tmpObj);
 
-    this.pageMeta = tmpObj.meta;
+    return tmpObj.meta;
   }
 
   Game_Event.prototype.getCurrentPageFirstComments = function() {
-    if (!this.page() || !this.list()) return;
+    return this.getPageFirstComments(this.page());
+  }
 
-    const list = this.list();
+  Game_Event.prototype.getPageFirstComments = function(page) {
+    if (!page?.list) return null;
+
+    const list = page.list;
     const comments = [];
     for (const command of list) {
       if (!command || ![108, 408].includes(command.code)) {
