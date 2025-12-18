@@ -26,12 +26,19 @@
  *   Game_Action.targetsForDeadAndAlive
  * 
  * 【使い方】
- * スキルのメモに以下を記載
+ * スキルのメモに以下を記載。なお味方に対するスキルは以下を適宜読み替えること
  *   <ifState:10>    --- ID:10のステートがある敵に攻撃する
  *   <ifNotState:10> --- ID:10のステートがない敵に攻撃する
  *   <ifArmor:10>    --- ID:10の防具がある敵に攻撃する
  *   <ifNotArmor:10> --- ID:10の防具がない敵に攻撃する
+ *   <ifHurt:50>     --- HPが50%未満の敵に攻撃する
+ *   <ifNotSelf:1>   --- 自分を対象から除外する
  * 対象がいない場合はそのまま別の攻撃をします
+ * 
+ * エネミーのメモに以下を記載（ifState以外も上記と同じ記載が可能）
+ *   <ifState:5,10> --- このエネミーはID:5のスキルについてID:10のステートがある敵に攻撃する
+ *                      スキルに設定された条件も一緒に満たす必要がある
+ * これによってエネミー個別のスキル使用条件を設定可能です
  * 
  * 
  * 【利用規約】
@@ -66,14 +73,47 @@
   }
 
   // ---------------------------------------------
-  // ユニットからスキル使用可能なターゲットを絞り出す
+  // スキルを使う前に、このスキルを使う相手がいるか調べる部分
   // ---------------------------------------------
 
-  const filterSkillTargets = function(unit, skill) {
-    let targetMembers = unit.aliveMembers();
+  const Game_BattlerBase_meetsSkillConditions = Game_BattlerBase.prototype.meetsSkillConditions;
+  Game_BattlerBase.prototype.meetsSkillConditions = function(skill) {
+    if (this.isEnemy()) {
+      if (this.filterSkillTargets(skill).length === 0) {
+        return false;
+      }
+    }
 
-    if (skill.meta) {
-      const { ifState, ifNotState, ifArmor, ifNotArmor } = skill.meta;
+    return Game_BattlerBase_meetsSkillConditions.call(this, skill);
+  };
+
+  function extractEnemyMetaDataForSkill(skill, note) {
+    if (!note) return {};
+
+    const regExp = new RegExp(`<([^:]+):${skill.id},([^>]*)>`, 'g');
+    const values = {};
+
+    let match;
+    while (match = regExp.exec(note)) {
+      values[match[1]] = match[2];
+    }
+    return values;
+  }
+
+  Game_BattlerBase.prototype.filterSkillTargets = function(skill, unit) {
+    if (skill) {
+      unit ??= this.isForFriend(skill) ? this.friendsUnit() : this.opponentsUnit();
+    } else {
+      return $gameParty.aliveMembers();
+    }
+
+    let targetMembers = unit.aliveMembers();
+    if (!this.isEnemy()) return targetMembers;
+
+    const checkMeta = (meta) => {
+      if (!meta) return;
+
+      const { ifState, ifNotState, ifArmor, ifNotArmor, ifHurt, ifNotSelf } = meta;
 
       if (ifState) {
         const skillId = parseInt(ifState);
@@ -91,24 +131,29 @@
         const armorId = parseInt(ifNotArmor);
         targetMembers = targetMembers.filter((member) => !member.hasArmor($dataArmors[armorId]));
       }
-    }
+      if (ifHurt) {
+        const rate = parseInt(ifHurt) / 100;
+        targetMembers = targetMembers.filter((member) => member.hp / member.mhp < rate);
+      }
+      if (ifNotSelf) {
+        targetMembers = targetMembers.filter((member) => member !== this);
+      }
+    };
+
+    const enemyMetas = extractEnemyMetaDataForSkill(skill, this.enemy()?.note);
+
+    checkMeta(skill.meta);
+    checkMeta(enemyMetas);
 
     return targetMembers;
+  }
+
+  Game_BattlerBase.prototype.checkItemScope = function(item, list) {
+    return list.includes(item.scope);
   };
 
-  // ---------------------------------------------
-  // スキルを使う前に、このスキルを使う相手がいるか調べる部分
-  // ---------------------------------------------
-
-  const Game_BattlerBase_canUse = Game_BattlerBase.prototype.canUse;
-  Game_BattlerBase.prototype.canUse = function(item) {
-    if (this.isEnemy() && DataManager.isSkill(item)) {
-      if (filterSkillTargets(this.opponentsUnit(), item).length === 0) {
-        return false;
-      }
-    }
-
-    return Game_BattlerBase_canUse.call(this, item);
+  Game_BattlerBase.prototype.isForFriend = function(item) {
+    return this.checkItemScope(item, [7, 8, 9, 10, 11, 12, 13, 14]);
   };
 
   // ---------------------------------------------
@@ -121,7 +166,7 @@
       return Game_Action_targetsForOpponents.call(this);
     }
 
-    const targetMembers = filterSkillTargets(this.opponentsUnit(), this.item());
+    const targetMembers = this.subject().filterSkillTargets(this.item(), this.opponentsUnit());
     const unit = new PartialUnit();
     unit.setMembers(targetMembers);
 
@@ -138,7 +183,7 @@
       return Game_Action_targetsForFriends.call(this);
     }
 
-    const targetMembers = filterSkillTargets(this.friendsUnit(), this.item());
+    const targetMembers = this.subject().filterSkillTargets(this.item(), this.friendsUnit());
     const unit = new PartialUnit();
     unit.setMembers(targetMembers);
 
@@ -152,4 +197,23 @@
         return this.targetsForDeadAndAlive(unit);
     }
   };
+
+  // ---------------------------------------------
+  // 現状、エネミーの行動はこちら側がコマンドを入力する前に決定する模様
+  // エネミーの行動直前に条件が変わる可能性があるので、
+  // あらためてコマンド選択するようにする
+  // （デフォルトの仕様でもエネミー行動直前にスキルの前提条件が変わる可能性はあるわけで
+  //   それは制限事項なんでしょうか？）
+  // ---------------------------------------------
+
+  const BattleManager_getNextSubject = BattleManager.getNextSubject;
+  BattleManager.getNextSubject = function() {
+    const battler = BattleManager_getNextSubject.call(this);
+    if (battler?.isEnemy()) {
+      $gameTroop._turnCount--;
+      battler.makeActions();
+      $gameTroop._turnCount++;
+    }
+    return battler;
+  }
 })();
