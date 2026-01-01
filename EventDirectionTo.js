@@ -37,6 +37,34 @@
  * @text ウェイトするか
  * @type boolean
  * @default true
+ * 
+ * 
+ * @command moveToByEventId
+ * @text 移動先イベントID指定して移動開始
+ * @desc 対象イベントとの当たり判定は普通にあります。対象イベントへ移動できずコマンド完了できない現象に注意
+ * @arg eventId
+ * @text イベントID
+ * @arg targetEventId
+ * @text 移動先のイベントID
+ * @type number
+ * @arg wait
+ * @text ウェイトするか
+ * @type boolean
+ * @default true
+ * 
+ * 
+ * @command moveToByRegionId
+ * @text 移動先リージョンID指定して移動開始
+ * @desc 同じリージョン番号が複数ある場合、どれが使われるかは保証されません
+ * @arg eventId
+ * @text イベントID
+ * @arg targetRegionId
+ * @text 移動先のリージョンID
+ * @type number
+ * @arg wait
+ * @text ウェイトするか
+ * @type boolean
+ * @default true
  */
 
 (() => {
@@ -91,12 +119,42 @@
     return Game_Interpreter_updateWaitMode.call(this);
   }
 
+  Game_Interpreter.prototype.moveEventToPosition = function(eventId, x, y, wait) {
+    $gameMap.event(eventId)?.forceMovePosition(x, y);
+    if (wait) {
+      this._characterId = eventId;
+      this.setWaitMode('eventMove');
+    }
+  }
+
   PluginManager.registerCommand(PLUGIN_NAME, "moveTo", function(args) {
     const { eventId, x, y, wait } = args;
-    $gameMap.event(parseInt(eventId))?.forceMovePosition(parseInt(x), parseInt(y));
-    if (wait === 'true') {
-      this._characterId = parseInt(eventId);
-      this.setWaitMode('eventMove');
+    this.moveEventToPosition(parseInt(eventId), parseInt(x), parseInt(y), wait === 'true');
+  });
+
+  PluginManager.registerCommand(PLUGIN_NAME, "moveToByEventId", function(args) {
+    const { eventId, targetEventId, wait } = args;
+    const event = $gameMap.event(parseInt(targetEventId))?.event();
+    if (!event) return;
+
+    this.moveEventToPosition(parseInt(eventId), event.x, event.y, wait === 'true');
+  });
+
+  PluginManager.registerCommand(PLUGIN_NAME, "moveToByRegionId", function(args) {
+    const { eventId, targetRegionIdRaw, wait } = args;
+    const width = $dataMap.width;
+    const height = $dataMap.height;
+
+    const targetRegionId = parseInt(targetRegionIdRaw);
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const regionId = $dataMap.data[(5 * height * y) * width + x] || 0;
+        if (regionId === targetRegionId) {
+          this.moveEventToPosition(parseInt(eventId), x, y, wait === 'true');
+          return;
+        }
+      }
     }
   });
 })();

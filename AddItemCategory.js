@@ -51,7 +51,7 @@
 
     const insertIndex = (() => {
       const find = this._list.findIndex((item) => item.symbol === 'item');
-      return find >= 0 ? find + 1 : 1;
+      return find >= 0 ? find + 1 : 0;
     })();
     for (const { name, symbol } of extraCategories) {
       this._list.splice(insertIndex, 0, { name, symbol, enabled: true, ext: null, });
@@ -81,9 +81,7 @@
   const Window_ItemList_includes = Window_ItemList.prototype.includes;
   Window_ItemList.prototype.includes = function(item) {
     if (this._extraCategory) {
-      if (item?.meta.categoryName === this._extraCategory?.name) {
-        return true;
-      }
+      return item?.meta.categoryName === this._extraCategory.name;
     } else {
       if (item?.meta.categoryName) {
         return false;
