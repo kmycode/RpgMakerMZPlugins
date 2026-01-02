@@ -27,12 +27,14 @@
  * 
  * 【使い方】
  * スキルのメモに以下を記載。なお味方に対するスキルは以下を適宜読み替えること
- *   <ifState:10>    --- ID:10のステートがある敵に攻撃する
- *   <ifNotState:10> --- ID:10のステートがない敵に攻撃する
- *   <ifArmor:10>    --- ID:10の防具がある敵に攻撃する
- *   <ifNotArmor:10> --- ID:10の防具がない敵に攻撃する
- *   <ifHurt:50>     --- HPが50%未満の敵に攻撃する
- *   <ifNotSelf:1>   --- 自分を対象から除外する
+ *   <ifState:10>     --- ID:10のステートがある敵に攻撃する
+ *   <ifNotState:10>  --- ID:10のステートがない敵に攻撃する
+ *   <ifArmor:10>     --- ID:10の防具がある敵に攻撃する
+ *   <ifNotArmor:10>  --- ID:10の防具がない敵に攻撃する
+ *   <ifHurt:50>      --- HPが50%未満の敵に攻撃する
+ *   <ifNotSelf:1>    --- 自分を対象から除外する
+ *   <ifVariable:2,1> --- ID:2の変数の値が1だった場合のみに攻撃する
+ *   <ifSwitch:2>     --- ID:2のスイッチがonだった場合のみに攻撃する
  * 対象がいない場合はそのまま別の攻撃をします
  * 
  * エネミーのメモに以下を記載（ifState以外も上記と同じ記載が可能）
@@ -113,7 +115,7 @@
     const checkMeta = (meta) => {
       if (!meta) return;
 
-      const { ifState, ifNotState, ifArmor, ifNotArmor, ifHurt, ifNotSelf } = meta;
+      const { ifState, ifNotState, ifArmor, ifNotArmor, ifHurt, ifNotSelf, ifVariable, ifSwitch } = meta;
 
       if (ifState) {
         const skillId = parseInt(ifState);
@@ -137,6 +139,14 @@
       }
       if (ifNotSelf) {
         targetMembers = targetMembers.filter((member) => member !== this);
+      }
+      if (ifVariable) {
+        const [ variableId, value ] = ifVariable.split(',').map((v) => parseInt(v));
+        targetMembers = $gameVariables.value(variableId) === value ? targetMembers : [];
+      }
+      if (ifSwitch) {
+        const [ switchId, value ] = ifSwitch.split(',').map((v) => parseInt(v));
+        targetMembers = $gameSwitches.value(switchId) ? targetMembers : [];
       }
     };
 
