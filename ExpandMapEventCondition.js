@@ -18,6 +18,8 @@
  * 各ページの先頭の注釈に、以下を設定します（それぞれ１つのページに１つしか指定できません）
  *   <variableEq:5,10> --- ID:5の変数が10でなければならない
  *   <switchOff:5>     --- ID:5のスイッチがOffでなければならない
+ *   <level:3,less>    --- パーティー内の最大レベルが 3 未満（3を含まない）
+ *   <level:3,orMore>  --- パーティー内の最大レベルが 3 以上（3を含む）
  * 
  * 【利用規約】
  * 独自ライセンス https://github.com/kmycode/RpgMakerMZPlugins/blob/main/LICENSE.md
@@ -38,7 +40,7 @@
     const meta = this.extractPageMeta(page);
     if (!meta) return result;
 
-    const { variableEq, switchOff } = meta;
+    const { variableEq, switchOff, level } = meta;
     if (variableEq) {
       const { variableId, value } = variableEq.split(',').map((v) => parseInt(v));
       if ($gameVariables.value(variableId) !== value) {
@@ -49,6 +51,18 @@
       const switchId = parseInt(switchOff);
       if ($gameSwitches.value(switchId)) {
         return false;
+      }
+    }
+    if (level) {
+      const [ valueRaw, operand ] = level.split(',');
+      const value = parseInt(valueRaw);
+      switch (operand) {
+        case 'less':
+          if ($gameParty.highestLevel() >= value) return false;
+          break;
+        case 'orMore':
+          if ($gameParty.highestLevel() < value) return false;
+          break;
       }
     }
 
