@@ -57,7 +57,7 @@
  * @text 移動先リージョンID指定して移動開始
  * @desc 同じリージョン番号が複数ある場合、どれが使われるかは保証されません
  * @arg eventId
- * @text イベントID
+ * @text イベントID。0または指定なしなら主人公が移動
  * @arg targetRegionId
  * @text 移動先のリージョンID
  * @type number
@@ -79,13 +79,14 @@
     this._forceMoveY = 0;
   }
 
-  const Game_Event_update = Game_Event.prototype.update;
-  Game_Event.prototype.update = function() {
-    Game_Event_update.call(this);
+  const Game_CharacterBase_update = Game_CharacterBase.prototype.update;
+  const Game_Character_update = Game_Character.prototype.update;
+  Game_Character.prototype.update = function() {
+    (Game_Character_update ?? Game_CharacterBase_update).call(this);
     this.updateForceMovePosition();
   }
 
-  Game_Event.prototype.updateForceMovePosition = function() {
+  Game_Character.prototype.updateForceMovePosition = function() {
     if (this._forceMovePosition && !this.isMoving()) {
       const direction = this.findDirectionTo(this._forceMoveX, this._forceMoveY);
       if (direction > 0) {
@@ -96,13 +97,13 @@
     }
   }
 
-  Game_Event.prototype.forceMovePosition = function(x, y) {
+  Game_Character.prototype.forceMovePosition = function(x, y) {
     this._forceMovePosition = true;
     this._forceMoveX = x;
     this._forceMoveY = y;
   }
 
-  Game_Event.prototype.forceMovingPosition = function() {
+  Game_Character.prototype.forceMovingPosition = function() {
     return !!this._forceMovePosition;
   }
 
@@ -120,10 +121,18 @@
   }
 
   Game_Interpreter.prototype.moveEventToPosition = function(eventId, x, y, wait) {
-    $gameMap.event(eventId)?.forceMovePosition(x, y);
-    if (wait) {
-      this._characterId = eventId;
-      this.setWaitMode('eventMove');
+    if (eventId <= 0 || eventId === undefined) {
+      $gamePlayer.forceMovePosition(x, y);
+      if (wait) {
+        this._characterId = -1;
+        this.setWaitMode('eventMove');
+      }
+    } else {
+      $gameMap.event(eventId)?.forceMovePosition(x, y);
+      if (wait) {
+        this._characterId = eventId;
+        this.setWaitMode('eventMove');
+      }
     }
   }
 
