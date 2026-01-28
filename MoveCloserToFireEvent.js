@@ -16,12 +16,15 @@
  * 
  * 【使い方】
  * マップイベントで現在アクティブになっている（出現条件を満たしている）ページの冒頭の注釈に以下タグを設定します
- *   <fireDistance:3>      --- このイベントまで距離が3マス「以下」になった時にそのページのイベントが自動的に開始されます
- *                             イベントに近づく時に発生します
- *   <fireDistanceFar:3>   --- このイベントまで距離が3マス「以上」になった時にそのページのイベントが自動的に開始されます
- *                             イベントから離れる時に発生します。設定するときはフラグや主人公の現在位置に注意してください
- *   <fireDistanceFar:3,8> --- このイベントまで距離が3マス「以上」になった時に、同じマップのID:8のイベントが開始されます
- *                             ID:8のイベントは現在の出現条件を満たしているページの内容が実行されます
+ *   <fireDistance:3>        --- このイベントまで距離が3マス「以下」になった時にそのページのイベントが自動的に開始されます
+ *                               イベントに近づく時に発生します
+ *   <fireDistanceFar:3>     --- このイベントまで距離が3マス「以上」になった時にそのページのイベントが自動的に開始されます
+ *                               イベントから離れる時に発生します。設定するときはフラグや主人公の現在位置に注意してください
+ *   <fireDistanceFar:3,8>   --- このイベントまで距離が3マス「以上」になった時に、同じマップのID:8のイベントが開始されます
+ *                               ID:8のイベントは現在の出現条件を満たしているページの内容が実行されます
+ *                               ID:8のイベントは、主人公が自分で到達できないような場所に配置するのをおすすめします
+ *                               それが難しい場合は switchDistanceFar の利用をご検討ください
+ *   <switchDistanceFar:3,8> --- このイベントまで距離が3マス「以上」になった時に、ID:8のスイッチがONになります
  * 出現条件を調整することで、同じ座標で複数のイベントを発生させることができます。
  * 
  * なお、出現条件を満たしている限りイベントは繰り返し発生するため、セルフスイッチなどを活用して
@@ -39,7 +42,7 @@
  */
 
 (() => {
-  const PLUGIN_NAME = 'ExpandMapEventCondition';
+  const PLUGIN_NAME = 'MoveCloserToFireEvent';
   const params = PluginManager.parameters(PLUGIN_NAME);
 
   const calcDistance = (x1, y1, x2, y2) => {
@@ -70,6 +73,13 @@
             } else {
               event.start();
             }
+          }
+        }
+        if (event.pageMeta?.switchDistanceFar) {
+          const [ distance, switchId ] = event.pageMeta.switchDistanceFar.split(',').map((v) => parseInt(v));
+          const currentDistance = calcDistance(x, y, event.x, event.y);
+          if (distance <= currentDistance) {
+            $gameSwitches.setValue(switchId, true);
           }
         }
       }
