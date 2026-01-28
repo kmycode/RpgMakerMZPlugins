@@ -16,10 +16,12 @@
  * 
  * 【使い方】
  * マップイベントで現在アクティブになっている（出現条件を満たしている）ページの冒頭の注釈に以下タグを設定します
- *   <fireDistance:3>    --- このイベントまで距離が3マス「以下」になった時にそのページのイベントが自動的に開始されます
- *                           イベントに近づく時に発生します
- *   <fireDistanceFar:3> --- このイベントまで距離が3マス「以上」になった時にそのページのイベントが自動的に開始されます
- *                           イベントから離れる時に発生します。設定するときはフラグや主人公の現在位置に注意してください
+ *   <fireDistance:3>      --- このイベントまで距離が3マス「以下」になった時にそのページのイベントが自動的に開始されます
+ *                             イベントに近づく時に発生します
+ *   <fireDistanceFar:3>   --- このイベントまで距離が3マス「以上」になった時にそのページのイベントが自動的に開始されます
+ *                             イベントから離れる時に発生します。設定するときはフラグや主人公の現在位置に注意してください
+ *   <fireDistanceFar:3,8> --- このイベントまで距離が3マス「以上」になった時に、同じマップのID:8のイベントが開始されます
+ *                             ID:8のイベントは現在の出現条件を満たしているページの内容が実行されます
  * 出現条件を調整することで、同じ座標で複数のイベントを発生させることができます。
  * 
  * なお、出現条件を満たしている限りイベントは繰り返し発生するため、セルフスイッチなどを活用して
@@ -59,10 +61,15 @@
           }
         }
         if (event.pageMeta?.fireDistanceFar) {
-          const distance = parseInt(event.pageMeta.fireDistanceFar);
+          const [ distance, eventId ] = event.pageMeta.fireDistanceFar.split(',').map((v) => parseInt(v));
           const currentDistance = calcDistance(x, y, event.x, event.y);
           if (distance <= currentDistance) {
-            event.start();
+            if (eventId) {
+              const targetEvent = $gameMap.event(eventId);
+              targetEvent.start();
+            } else {
+              event.start();
+            }
           }
         }
       }
