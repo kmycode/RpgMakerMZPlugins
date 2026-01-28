@@ -1,0 +1,62 @@
+//=============================================================================
+// RPG Maker MZ - MoveCloserToFireEvent
+//=============================================================================
+
+/*:
+ * @target MZ
+ * @plugindesc 一定距離まで近づいたらイベントを発動する
+ * @author 雪あすか
+ * @url https://github.com/kmycode/RpgMakerMZPlugins
+ * 
+ * 
+ * @help このゲーム独自のプラグイン
+ * 
+ * 【必須】
+ * このプラグインには MapEventPageMeta.js が別途必要です。一緒に登録しないとエラーは出ませんが動作しません（順番は問いません）
+ * 
+ * 【使い方】
+ * マップイベントで現在アクティブになっている（出現条件を満たしている）ページの冒頭の注釈に <fireDistance:3> が設定されていると、
+ * このイベントまで3マスの距離になった時にそのページのイベントが自動的に開始されます。
+ * 出現条件を調整することで、同じ座標で複数のイベントを発生させることができます。
+ * 
+ * なお、出現条件を満たしている限りイベントは繰り返し発生するため、セルフスイッチなどを活用して
+ * 一度実行されたイベントが２回以上繰り返されないよう工夫する必要があります（基本は「自動実行」と同じだと思ってください）
+ * 
+ * ページのトリガー（発生条件）は何でも構いませんが、
+ * 「自動実行」「並列処理」を設定するとこのプラグインの意味がなくなるので注意してください。
+ * 
+ * 
+ * 【利用規約】
+ * 独自ライセンス https://github.com/kmycode/RpgMakerMZPlugins/blob/main/LICENSE.md
+ * 
+ * 【更新履歴】
+ * 1.0 初版公開
+ */
+
+(() => {
+  const PLUGIN_NAME = 'ExpandMapEventCondition';
+  const params = PluginManager.parameters(PLUGIN_NAME);
+
+  const calcDistance = (x1, y1, x2, y2) => {
+    return Math.abs(x1 - x2) + Math.abs(y1 - y2);
+  };
+
+  const Game_Player_startMapEvent = Game_Player.prototype.startMapEvent;
+  Game_Player.prototype.startMapEvent = function(x, y, triggers, normal) {
+    if (!$gameMap.isEventRunning()) {
+      // $gameMap.isEventRunningをイベント開始直後に分岐してしまわないよう、元メソッドはこの位置から呼び出す
+      Game_Player_startMapEvent.call(this, x, y, triggers, normal);
+
+      for (const event of $gameMap.events()) {
+        if (event.pageMeta?.fireDistance) {
+          console.log(event.pageMeta?.fireDistance);
+          const distance = parseInt(event.pageMeta.fireDistance);
+          const currentDistance = calcDistance(x, y, event.x, event.y);
+          if (distance >= currentDistance) {
+            event.start();
+          }
+        }
+      }
+    }
+  };
+})();
