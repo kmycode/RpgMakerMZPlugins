@@ -17,6 +17,7 @@
  * 【使い方】
  * 各ページの先頭の注釈に、以下を設定します（それぞれ１つのページに１つしか指定できません）
  *   <variableEq:5,10> --- ID:5の変数が10でなければならない
+ *   <variableEq:5-10,6-11> --- この書式で複数指定可能
  *   <switchOff:5>     --- ID:5のスイッチがOffでなければならない
  *   <level:3,less>    --- パーティー内の最大レベルが 3 未満（3を含まない）
  *   <level:3,orMore>  --- パーティー内の最大レベルが 3 以上（3を含む）
@@ -40,11 +41,18 @@
     const meta = this.extractPageMeta(page);
     if (!meta) return result;
 
-    const { variableEq, switchOff, level } = meta;
+    const { variableEq, switchOff, level, } = meta;
     if (variableEq) {
-      const { variableId, value } = variableEq.split(',').map((v) => parseInt(v));
-      if ($gameVariables.value(variableId) !== value) {
-        return false;
+      if (variableEq.includes('-')) {
+        const data = variableEq.split(',').map((v) => v.split('-').map((vv) => parseInt(vv)));
+        if (!data.every(([ variableId, value ]) => $gameVariables.value(variableId) === value)) {
+          return false;
+        }
+      } else {
+        const { variableId, value } = variableEq.split(',').map((v) => parseInt(v));
+        if ($gameVariables.value(variableId) !== value) {
+          return false;
+        }
       }
     }
     if (switchOff) {

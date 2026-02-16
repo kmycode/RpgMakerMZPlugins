@@ -9,7 +9,11 @@
  * @url https://github.com/kmycode/RpgMakerMZPlugins
  * 
  * 
- * @help スキルのメモに <damageHp:5> とすると、スキル使用時にHP=5のダメージを受けます
+ * @help
+ * スキルのメモに <damageHp:5> とすると、スキル使用時にHP=5のダメージを受けます
+ * ステートのメモに <damageHp:5> とすると、以下の２つの条件を＜どちらも＞満たしている場合にダメージが加算されます
+ *   ・使用するスキルにdamageHpが設定されている
+ *   ・そのステートが有効である
  * 
  * 
  * 【利用規約】
@@ -23,10 +27,19 @@
   const PLUGIN_NAME = 'DamageWithSkill';
 
   Game_BattlerBase.prototype.skillHpCost = function(skill) {
+    let damageHp = 0;
+
     if (skill.meta?.damageHp) {
-      return parseInt(skill.meta?.damageHp);
+      damageHp += parseInt(skill.meta?.damageHp);
+
+      for (const state of this.states()) {
+        if (state?.meta?.damageHp) {
+          damageHp += parseInt(state.meta.damageHp);
+        }
+      }
     }
-    return 0;
+
+    return damageHp;
   };
 
   const Game_BattlerBase_canPaySkillCost = Game_BattlerBase.prototype.canPaySkillCost;
@@ -40,7 +53,15 @@
   const Game_BattlerBase_paySkillCost = Game_BattlerBase.prototype.paySkillCost;
   Game_BattlerBase.prototype.paySkillCost = function(skill) {
     Game_BattlerBase_paySkillCost.call(this, skill);
-    this._hp -= this.skillHpCost(skill);
+    if (this instanceof Game_Battler) {
+      const cost = this.skillHpCost(skill);
+      if (cost > 0) {
+        this.gainHp(-cost);
+        this.startDamagePopup();
+      }
+    } else {
+      this._hp -= this.skillHpCost(skill);
+    }
   };
 
   const Window_BattleLog_displayAction = Window_BattleLog.prototype.displayAction;

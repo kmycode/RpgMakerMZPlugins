@@ -26,6 +26,7 @@
  * @text 座標指定して移動開始
  * @arg eventId
  * @text イベントID
+ * @desc 0を指定でプレイヤーが移動する
  * @type number
  * @arg x
  * @text 移動先X
@@ -37,6 +38,10 @@
  * @text ウェイトするか
  * @type boolean
  * @default true
+ * @arg skippable
+ * @text 移動できない場合はスキップ
+ * @type boolean
+ * @default true
  * 
  * 
  * @command moveToByEventId
@@ -44,11 +49,16 @@
  * @desc 対象イベントとの当たり判定は普通にあります。対象イベントへ移動できずコマンド完了できない現象に注意
  * @arg eventId
  * @text イベントID
+ * @desc 0を指定でプレイヤーが移動する
  * @arg targetEventId
  * @text 移動先のイベントID
  * @type number
  * @arg wait
  * @text ウェイトするか
+ * @type boolean
+ * @default true
+ * @arg skippable
+ * @text 移動できない場合はスキップ
  * @type boolean
  * @default true
  * 
@@ -57,12 +67,17 @@
  * @text 移動先リージョンID指定して移動開始
  * @desc 同じリージョン番号が複数ある場合、どれが使われるかは保証されません
  * @arg eventId
- * @text イベントID。0または指定なしなら主人公が移動
+ * @text イベントID
+ * @desc 0を指定でプレイヤーが移動する
  * @arg targetRegionId
  * @text 移動先のリージョンID
  * @type number
  * @arg wait
  * @text ウェイトするか
+ * @type boolean
+ * @default true
+ * @arg skippable
+ * @text 移動できない場合はスキップ
  * @type boolean
  * @default true
  */
@@ -77,6 +92,7 @@
     this._forceMovePosition = false;
     this._forceMoveX = 0;
     this._forceMoveY = 0;
+    this._forceMoveSkippable = false;
   }
 
   const Game_CharacterBase_update = Game_CharacterBase.prototype.update;
@@ -91,16 +107,22 @@
       const direction = this.findDirectionTo(this._forceMoveX, this._forceMoveY);
       if (direction > 0) {
         this.moveStraight(direction);
+        if (!this.isMovementSucceeded() && this._forceMoveSkippable) {
+          this._forceMovePosition = false;
+          this._forceMoveSkippable = false;
+        }
       } else {
         this._forceMovePosition = false;
+        this._forceMoveSkippable = false;
       }
     }
   }
 
-  Game_Character.prototype.forceMovePosition = function(x, y) {
+  Game_Character.prototype.forceMovePosition = function(x, y, skippable) {
     this._forceMovePosition = true;
     this._forceMoveX = x;
     this._forceMoveY = y;
+    this._forceMoveSkippable = skippable ?? false;
   }
 
   Game_Character.prototype.forceMovingPosition = function() {
@@ -120,15 +142,15 @@
     return Game_Interpreter_updateWaitMode.call(this);
   }
 
-  Game_Interpreter.prototype.moveEventToPosition = function(eventId, x, y, wait) {
-    if (eventId <= 0 || eventId === undefined) {
-      $gamePlayer.forceMovePosition(x, y);
+  Game_Interpreter.prototype.moveEventToPosition = function(eventId, x, y, wait, skippable) {
+    if (eventId === undefined || eventId <= 0) {
+      $gamePlayer.forceMovePosition(x, y, skippable);
       if (wait) {
         this._characterId = -1;
         this.setWaitMode('eventMove');
       }
     } else {
-      $gameMap.event(eventId)?.forceMovePosition(x, y);
+      $gameMap.event(eventId)?.forceMovePosition(x, y, skippable);
       if (wait) {
         this._characterId = eventId;
         this.setWaitMode('eventMove');
@@ -137,20 +159,20 @@
   }
 
   PluginManager.registerCommand(PLUGIN_NAME, "moveTo", function(args) {
-    const { eventId, x, y, wait } = args;
-    this.moveEventToPosition(parseInt(eventId), parseInt(x), parseInt(y), wait === 'true');
+    const { eventId, x, y, wait, skippable } = args;
+    this.moveEventToPosition(parseInt(eventId), parseInt(x), parseInt(y), wait === 'true', skippable === 'true');
   });
 
   PluginManager.registerCommand(PLUGIN_NAME, "moveToByEventId", function(args) {
-    const { eventId, targetEventId, wait } = args;
+    const { eventId, targetEventId, wait, skippable } = args;
     const event = $gameMap.event(parseInt(targetEventId))?.event();
     if (!event) return;
 
-    this.moveEventToPosition(parseInt(eventId), event.x, event.y, wait === 'true');
+    this.moveEventToPosition(parseInt(eventId), event.x, event.y, wait === 'true', skippable === 'true');
   });
 
   PluginManager.registerCommand(PLUGIN_NAME, "moveToByRegionId", function(args) {
-    const { eventId, targetRegionIdRaw, wait } = args;
+    const { eventId, targetRegionIdRaw, wait, skippable } = args;
     const width = $dataMap.width;
     const height = $dataMap.height;
 
@@ -160,7 +182,7 @@
       for (let x = 0; x < width; x++) {
         const regionId = $dataMap.data[(5 * height * y) * width + x] || 0;
         if (regionId === targetRegionId) {
-          this.moveEventToPosition(parseInt(eventId), x, y, wait === 'true');
+          this.moveEventToPosition(parseInt(eventId), x, y, wait === 'true', skippable === 'true');
           return;
         }
       }
