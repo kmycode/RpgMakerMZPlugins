@@ -25,6 +25,8 @@
  *                               ID:8のイベントは、主人公が自分で到達できないような場所に配置するのをおすすめします
  *                               それが難しい場合は switchDistanceFar の利用をご検討ください
  *   <switchDistanceFar:3,8> --- このイベントまで距離が3マス「以上」になった時に、ID:8のスイッチがONになります
+ *   <fireRegionIn:1>        --- No.1のリージョンに入った時にイベントが実行されます
+ *   <fireRegionOut:1>       --- No.1のリージョンから出た時にイベントが実行されます
  * 出現条件を調整することで、同じ座標で複数のイベントを発生させることができます。
  * 
  * なお、出現条件を満たしている限りイベントは繰り返し発生するため、セルフスイッチなどを活用して
@@ -56,15 +58,19 @@
       Game_Player_startMapEvent.call(this, x, y, triggers, normal);
 
       for (const event of $gameMap.events()) {
-        if (event.pageMeta?.fireDistance) {
-          const distance = parseInt(event.pageMeta.fireDistance);
+        if (!event.pageMeta) continue;
+
+        const { fireDistance, fireDistanceFar, switchDistanceFar, fireRegionIn, fireRegionOut } = event.pageMeta;
+
+        if (fireDistance) {
+          const distance = parseInt(fireDistance);
           const currentDistance = calcDistance(x, y, event.x, event.y);
           if (distance >= currentDistance) {
             event.start();
           }
         }
-        if (event.pageMeta?.fireDistanceFar) {
-          const [ distance, eventId ] = event.pageMeta.fireDistanceFar.split(',').map((v) => parseInt(v));
+        if (fireDistanceFar) {
+          const [ distance, eventId ] = fireDistanceFar.split(',').map((v) => parseInt(v));
           const currentDistance = calcDistance(x, y, event.x, event.y);
           if (distance <= currentDistance) {
             if (eventId) {
@@ -75,11 +81,25 @@
             }
           }
         }
-        if (event.pageMeta?.switchDistanceFar) {
-          const [ distance, switchId ] = event.pageMeta.switchDistanceFar.split(',').map((v) => parseInt(v));
+        if (switchDistanceFar) {
+          const [ distance, switchId ] = switchDistanceFar.split(',').map((v) => parseInt(v));
           const currentDistance = calcDistance(x, y, event.x, event.y);
           if (distance <= currentDistance) {
             $gameSwitches.setValue(switchId, true);
+          }
+        }
+        if (fireRegionIn) {
+          const regionId = (fireRegionIn === 'auto' && event.event()) ?
+            $gameMap.regionId(event.event().x, event.event().y) : parseInt(fireRegionIn);
+
+          if ($gameMap.regionId($gamePlayer.x, $gamePlayer.y) === regionId) {
+            event.start();
+          }
+        }
+        if (fireRegionOut) {
+          const regionId = parseInt(fireRegionOut);
+          if ($gameMap.regionId($gamePlayer.x, $gamePlayer.y) !== regionId) {
+            event.start();
           }
         }
       }
