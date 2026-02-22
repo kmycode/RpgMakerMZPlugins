@@ -30,9 +30,9 @@
   const PLUGIN_NAME = 'StateAfterState';
   const params = PluginManager.parameters(PLUGIN_NAME);
 
-  const Game_Battler_removeState = Game_Battler.prototype.removeState;
-  Game_Battler.prototype.removeState = function(stateId) {
-    Game_Battler_removeState.call(this, stateId);
+  const Game_Battler_eraseState = Game_Battler.prototype.eraseState;
+  Game_Battler.prototype.eraseState = function(stateId) {
+    Game_Battler_eraseState.call(this, stateId);
 
     const state = $dataStates[stateId];
     if (!state?.meta) return;
